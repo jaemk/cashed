@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cashed",
-    version="0.1",
+    version="0.1.1",
     description="Simple caching using decorators",
     author="James Kominick",
     author_email="james.kominick@gmail.com",
