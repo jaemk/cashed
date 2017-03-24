@@ -1,4 +1,3 @@
-import sys
 import time
 from cashed.cache import cached
 
@@ -17,7 +16,7 @@ def fib_fast(n):
 
 
 @cached(seconds=5)
-def slow_hello(name, color='brown'):
+def slow_hello(name, color='no favorite color!'):
     time.sleep(1)
     return 'Hello, {}! ({})'.format(name, color)
 
@@ -40,10 +39,5 @@ def run(a=0, b=35):
 
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    a_b = {}
-    if len(args) == 2:
-        a, b = args
-        a_b = {'a': int(a), 'b': int(b)}
-    run(**a_b)
+    run()
 
