@@ -39,7 +39,7 @@ class SizedCache(OrderedDict):
         if  self.size > self.capacity:
             try:
                 # drop the first (oldest) item
-                to_drop = self.iterkeys().next()
+                to_drop = next(iter(self))
                 self.__delitem__(to_drop)
             except StopIteration:
                 assert False, "SizedCache size is {size}, but cache is empty.".format(size=self.size)

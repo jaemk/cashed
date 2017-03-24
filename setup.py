@@ -6,6 +6,7 @@ setup(
     description="Simple caching using decorators",
     author="James Kominick",
     author_email="james.kominick@gmail.com",
+    license="MIT",
     url="https://github.com/jaemk/cashed",
     packages=find_packages(exclude=["examples"]),
 )

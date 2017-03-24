@@ -1,6 +1,5 @@
 import sys
 import time
-from itertools import repeat, chain
 from cashed.cache import cached
 
 
