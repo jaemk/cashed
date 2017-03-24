@@ -8,7 +8,9 @@
 
 ## Usage
 
-```
+The cashed.cashed decorator requires the arguments of the wrapped function implement `__hash__`
+
+```python
 import time
 from itertools import chain, repeat
 from cashed import cached
@@ -19,7 +21,7 @@ pairs = [('james', None),
          ('lauren', 'bailey'),
          ('lauren', None),]
 
-@cached(capacity=3)
+@cached(capacity=10)
 def slow(name, pet_name=None):
     time.sleep(1)
     pet = pet_name if pet_name else 'no pet!'
