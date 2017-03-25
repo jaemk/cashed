@@ -8,7 +8,7 @@ pairs = [('james', None),
          ('lauren', 'bailey'),
          ('lauren', None),]
 
-@cached(capacity=10)
+@cached(capacity=10, seconds=30)
 def slow(name, pet_name=None):
     time.sleep(1)
     pet = pet_name if pet_name else 'no pet!'

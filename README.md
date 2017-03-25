@@ -1,4 +1,4 @@
-# Python-Cashed
+# python-cashed
 
 > Simple caching using decorators
 
@@ -8,26 +8,15 @@
 
 ## Usage
 
-The cashed.cashed decorator requires the arguments of the wrapped function implement `__hash__`
+The `cached` decorator requires the arguments of the wrapped function to be hashable.
+`cached` accepts arguments `capacity` and `seconds` to limit the size of the cache and limit age of cached items.
 
 ```python
-import time
-from itertools import chain, repeat
 from cashed import cached
 
-pairs = [('james', None),
-         ('james', 'bean'),
-         ('bob', 'bill'),
-         ('lauren', 'bailey'),
-         ('lauren', None),]
-
-@cached(capacity=10)
-def slow(name, pet_name=None):
-    time.sleep(1)
-    pet = pet_name if pet_name else 'no pet!'
-    return '{name} : {pet}'.format(name=name, pet=pet)
-
-for name, pet in chain(*repeat(pairs, 3)):
-    ans = slow(name, pet_name=pet)
-    print(ans)
+@cached(capacity=100)
+def fib(n):
+    if n == 0 or n == 1:
+        return n
+    return fib(n-1) + fib(n-2)
 ```

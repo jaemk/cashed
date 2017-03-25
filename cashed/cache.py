@@ -7,112 +7,132 @@ class CacheError(Exception):
     pass
 
 
-class SizedCache(OrderedDict):
+class Sized(object):
     """
-    Simple `sized` cache
-     - Expects a `capacity` kwarg to limit cache size
-     - Will evict the least recently set or read k, v pair
+    Expects existence of:
+        - self.size
+        - self.capacity
+        - self.store -> implements dict interface: __getitem__, __setitem__, __delitem__
     """
-    def __init__(self, capacity=None, *args, **kwargs):
-        if capacity is None:
-            raise ValueError("SizedCache expects a single argument: `capacity`")
-        self.capacity = capacity
-        self.size = 0
-        super(SizedCache, self).__init__(*args, **kwargs)
-
     def __getitem__(self, key):
-        v = super(SizedCache, self).__getitem__(key)
+        v = self.store[k]
         self.move_to_last(key, v)
         return v
 
     def __setitem__(self, key, value):
         try:
             # look for & remove existing duplicate
-            super(SizedCache, self).__delitem__(key)
+            self.store[key]
         except KeyError:
             # we're adding a new item to the cache
             self.size += 1
 
         # ordered dict will insert on the end
-        super(SizedCache, self).__setitem__(key, value)
+        self.store[key] = value
 
-        if  self.size > self.capacity:
+        if self.size > self.capacity:
             try:
                 # drop the first (oldest) item
-                to_drop = next(iter(self))
+                to_drop = next(iter(self.store))
                 self.__delitem__(to_drop)
             except StopIteration:
                 assert False, "SizedCache size is {size}, but cache is empty.".format(size=self.size)
 
     def __delitem__(self, key):
-        super(SizedCache, self).__delitem__(key)
+        del self.store[key]
         self.size -= 1
-
-    def __repr__(self):
-        """
-        Need to override this since the default will do [(k, self[k]) for k in self]
-        which will trigger a reorder of `self` in our patched __getitem__ while we're
-        iterating through `self`
-        """
-        return '<SizedCache[{}cap : {}size]: {}>'\
-               .format(self.capacity, self.size, [(k, super(SizedCache, self).__getitem__(k)) for k in self])
 
     def move_to_last(self, key, value):
         """
         Implement our own move_to_end for old python
         """
-        if hasattr(self, 'move_to_end'):
-            self.move_to_end(key, last=True)
+        if hasattr(self.store, 'move_to_end'):
+            self.store.move_to_end(key, last=True)
         else:
             # our patched __setitem__ will first delete existing entries
             self[key] = value
 
-    def items(self):
-        raise CacheError("`items` disabled")
 
-    def values(self):
-        raise CacheError("`values` disabled")
-
-
-class TimedCache(dict):
+class Timed(object):
     """
-    Simple `timed` cache
-     - Expects a `seconds` kwarg to limit age of items
-     - Evicts overage items on lookups
+    Timed iterface
+     - Expects existence of:
+        - self.store -> implements dict interface: __getitem__, __setitem__, __delitem__
     """
-    def __init__(self, seconds=None, *args, **kwargs):
-        if seconds is None:
-            raise ValueError("TimedCached expects a single argument: `seconds`")
-        self.limit = seconds
-        super(TimedCache, self).__init__(*args, **kwargs)
-
     def __getitem__(self, key):
         now = time.time()
-        then, val = super(TimedCache, self).__getitem__(key)
+        then, val = self.store[key]
         if (now - then) > self.limit:
-            super(TimedCache, self).__delitem__(key)
+            del self.store[key]
             raise KeyError
         return val
 
     def __setitem__(self, key, value):
         now = time.time()
         stamped_val = (now, value)
-        super(TimedCache, self).__setitem__(key, stamped_val)
+        self.store[key] = stamped_val
+
+
+class TimedCache(Timed):
+    """
+    Timed cache
+     - Expects a `seconds` kwargs to limit age of cache items
+    """
+    def __init__(self, seconds=None):
+        if seconds is None:
+            raise CacheError("TimedCache expects a single argument: `seconds`")
+        self.store = {}
+        self.limit = seconds
 
     def __repr__(self):
-        return '<TimedCache[{}s]: {}>'.format(self.limit, [(k, super(TimedCache, self).__getitem__(k)) for k in self])
+        return '<TimedCache[{}s]: {}>'.format(self.limit, [(k, self.store[k]) for k in self.store])
 
     def items(self):
-        raise CacheError("`items` disabled")
+        return self.store.items()
 
-    def values(self):
-        raise CacheError("`values` disabled")
+
+class SizedCache(Sized):
+    """
+    Simple `sized` cache
+     - Expects a `capacity` kwarg to limit cache size
+     - Will evict the least recently set or read k, v pair
+    """
+    def __init__(self, capacity=None):
+        if capacity is None:
+            raise CacheError("SizedCache expects a single argument: `capacity`")
+        self.capacity = capacity
+        self.size = 0
+        self.store = OrderedDict()
+
+    def __repr__(self):
+        return '<SizedCache[{}cap : {}size]: {}>'\
+               .format(self.capacity, self.size, [(k, self.store[k]) for k in self.store])
+
+    def items(self):
+        return self.store.items()
+
+
+class TimedSizedCache(Timed, Sized):
+    def __init__(self, capacity=None, seconds=None):
+        if capacity is None or seconds is None:
+            raise CacheError("TimedSizedCache expects a two arguments: `capacity`, `seconds`")
+        self.limit = seconds
+        self.capacity = capacity
+        self.size = 0
+        self.store = OrderedDict()
+
+    def __repr__(self):
+        return '<TimedSizedCache[{}cap, {}size, {}s]: {}>'\
+                .format(self.capacity, self.size, self.limit, [(k, self.store[k]) for k in self.store])
+
+    def items(self):
+        return self.store.items()
 
 
 def cached(capacity=None, seconds=None):
     """ Decorator to wrap a function with an optionally sized or timed cache. """
     if capacity is not None and seconds is not None:
-        raise CacheError("Cache can currently only be sized or timed")
+        cache = TimedSizedCache(capacity=capacity, seconds=seconds)
     elif capacity is not None:
         cache = SizedCache(capacity=capacity)
     elif seconds is not None:
@@ -127,7 +147,7 @@ def cached(capacity=None, seconds=None):
             try:
                 v = cache[key]
             except TypeError:
-                raise CacheError('Inputs args: {}, kwargs: {} are not cacheable. All arguments must implement __hash__'\
+                raise CacheError('Inputs args: {}, kwargs: {} are not cacheable. All arguments must be hashable'\
                                  .format(args, kwargs))
             except KeyError:
                 v = func(*args, **kwargs)
