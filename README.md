@@ -1,4 +1,4 @@
-# python-cashed
+# python-cashed [![Build Status](https://travis-ci.org/jaemk/cashed.svg?branch=master)](https://travis-ci.org/jaemk/cashed) [![PyPI version](https://badge.fury.io/py/cashed.svg)](https://badge.fury.io/py/cashed)
 
 > Simple caching using decorators
 
