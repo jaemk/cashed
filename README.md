@@ -10,7 +10,7 @@
 
 The `cached` decorator requires the arguments of the wrapped function to be hashable.
 `cached` accepts arguments `capacity` and `seconds` to limit the size of the cache and limit age of cached items.
-`cached` functions similarly to `functools.lru_cache` with the additional of the optional time constraint.
+`cached` functions similarly to `functools.lru_cache` with the addition of the optional time constraint.
 
 ```python
 import time
