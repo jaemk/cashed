@@ -22,6 +22,7 @@ for name, pet in chain(*repeat(pairs, 3)):
     start = time.time()
     ans = slow_op(name, pet_name=pet)
     print('{} -> {}'.format(time.time()-start, ans))
+print(slow_op.cache_info())
 
 
 ######
@@ -46,4 +47,5 @@ for _type, func in [('uncached', fib_slow), ('cached', fib_fast)]:
     for n in range(30):
         v = func(n)
     print(' ** {} -> {}s **'.format(_type, time.time()-start))
+    print(fib_fast.cache_info())
 

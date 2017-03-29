@@ -26,6 +26,7 @@ class BasicCacheTest(unittest.TestCase):
         elap2 = time.time() - start
 
         self.assertTrue(elap1 > elap2, "cached op is faster")
+        self.assertTrue(self.cached_op.cache_info()['size'] == 1)
 
 
 class SizedCacheTest(unittest.TestCase):
@@ -37,13 +38,21 @@ class SizedCacheTest(unittest.TestCase):
         self.cached_op = cached_op
 
     def test_sized_cache(self):
-        [self.cached_op(n) for n in range(3)]
-        _, was_cached = self.cached_op(2)
+        [self.cached_op(n, value=n) for n in range(3)]
+        ans, was_cached = self.cached_op(2, value=2)
         self.assertTrue(was_cached)
-        _, was_cached = self.cached_op(20)
+        self.assertTrue(ans == 2)
+        ans, was_cached = self.cached_op(20, value=30)
         self.assertFalse(was_cached)
-        _, was_cached = self.cached_op(0)
+        self.assertTrue(ans == 30)
+        ans, was_cached = self.cached_op(0)
         self.assertFalse(was_cached)
+        self.assertTrue(ans is None)
+
+        info = self.cached_op.cache_info()
+        self.assertTrue(info['hits'] == 1)
+        self.assertTrue(info['misses'] == 5)
+        self.assertTrue(info['size'] == 3)
 
 
 class TimedCacheTest(unittest.TestCase):
@@ -56,11 +65,22 @@ class TimedCacheTest(unittest.TestCase):
 
     def test_timed_cache(self):
         self.cached_op(1)
-        _, was_cached = self.cached_op(1)
+        ans, was_cached = self.cached_op(1)
         self.assertTrue(was_cached)
+        self.assertTrue(ans == 1)
         time.sleep(3)
-        _, was_cached = self.cached_op(1)
+        ans, was_cached = self.cached_op(1)
         self.assertFalse(was_cached)
+        self.assertTrue(ans == 1)
+
+        info = self.cached_op.cache_info()
+        self.assertTrue(info['hits'] == 1)
+        self.assertTrue(info['misses'] == 2)
+        self.assertTrue(info['size'] == 1)
+
+        time.sleep(3)
+        info = self.cached_op.cache_info()
+        self.assertTrue(info['size'] == 0)
 
 
 class TimedSizedCacheTest(unittest.TestCase):
@@ -73,12 +93,15 @@ class TimedSizedCacheTest(unittest.TestCase):
 
     def test_timedsized_cache(self):
         [self.cached_op(n) for n in range(2)]
-        _, was_cached = self.cached_op(2)
+        ans, was_cached = self.cached_op(2)
         self.assertFalse(was_cached)
-        _, was_cached = self.cached_op(0)
+        self.assertTrue(ans == 2)
+        ans, was_cached = self.cached_op(0)
         self.assertFalse(was_cached)
+        self.assertTrue(ans == 0)
         time.sleep(3)
-        _, was_cached = self.cached_op(2)
+        ans, was_cached = self.cached_op(2)
+        self.assertTrue(ans == 2)
         self.assertFalse(was_cached)
 
 
